@@ -164,7 +164,8 @@ host_hook(lua_State *L, lua_Debug *ar) {
 		lua_pushinteger(L, ar->currentline);
 	}
 	if (lua_pcall(L, 3, 0, 0) != LUA_OK) {
-		// todo: raise error message
+		// todo: raise error message, remove this printf
+		printf("hook err: %s\n", lua_tostring(L, -1));
 		clear_client(L);
 		lua_sethook(L, NULL, 0, 0);
 	}
@@ -395,22 +396,25 @@ lclient_getinfo(lua_State *L) {
 	lua_settop(L, 2);
 	if (lua_type(L, 2) != LUA_TTABLE) {
 		lua_pop(L, 1);
-		lua_createtable(L, 0, 4);
+		lua_createtable(L, 0, 5);
 	}
 	lua_State *hL = get_host(L);
 	lua_Debug ar;
 	if (lua_getstack(hL, level, &ar) == 0)
 		return 0;
-	if (lua_getinfo(hL, "Stl", &ar) == 0)
+	if (lua_getinfo(hL, "Sl", &ar) == 0)
 		return 0;
 	lua_pushstring(L, ar.source);
 	lua_setfield(L, 2, "source");
 	lua_pushstring(L, ar.short_src);
 	lua_setfield(L, 2, "short_src");
-	lua_pushboolean(L, ar.istailcall);
-	lua_setfield(L, 2, "istailcall");
 	lua_pushinteger(L, ar.currentline);
 	lua_setfield(L, 2, "currentline");
+	lua_pushinteger(L, ar.linedefined);
+	lua_setfield(L, 2, "linedefined");
+	lua_pushinteger(L, ar.lastlinedefined);
+	lua_setfield(L, 2, "lastlinedefined");
+
 	return 1;
 }
 

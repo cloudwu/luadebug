@@ -86,7 +86,7 @@ function aux.frame(level)
 		if name == nil then
 			break
 		end
-		table.insert(str, string.format("%s",rdebug.value(v)))
+		table.insert(str, string.format("%s ",rdebug.value(v)))
 		frame.locals[i] = wrap_v(v)
 		i = i - 1
 	end

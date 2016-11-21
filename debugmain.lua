@@ -1,10 +1,20 @@
 local rdebug = require "remotedebug"
 assert(rdebug.status == "debugger")
 local aux = require "debugaux"
+local hook = require "debughook"
 
 print("I'm in debugger")
 
+local function hookpoint(source, line)
+	print("HOOKPOINT ->", aux.frame(1))
+end
+
+hook.probe("@test.lua",6, hookpoint)
+
 rdebug.sethook(function(event, line)
+	if hook.hook(event,line) then
+		return
+	end
 	if event == "abc" then
 		local f = aux.frame(1)
 		print(f)
@@ -18,7 +28,5 @@ rdebug.sethook(function(event, line)
 		rdebug.hookmask "cr"
 	elseif event == "ABC" then
 		print(rdebug.getinfo(1).source, line)
-	else
-		print(event, rdebug.getinfo(1).source, line)
 	end
 end)
