@@ -46,8 +46,9 @@ function hook.hook(event, currentline)
 	end
 	local list = probe_list[source]
 	if not list then
-		rdebug.hookmask "cr"
-		return false
+		if event == "line" then
+			rdebug.hookmask "cr"
+		end
 	elseif cr[event] then
 		for line in pairs(list) do
 			if line >= linedefined and line <= lastlinedefined then
@@ -55,11 +56,13 @@ function hook.hook(event, currentline)
 				break
 			end
 		end
-	end
-	local f = list[currentline]
-	if f then
-		f(source, currentline)
-		return true
+	else
+		-- only line event can trigger probe
+		local f = list[currentline]
+		if f then
+			f(source, currentline)
+			return true
+		end
 	end
 	return false
 end
