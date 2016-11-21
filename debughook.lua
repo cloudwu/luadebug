@@ -12,6 +12,10 @@ function hook.probe(src, line, func)
 		if not func then
 			if not next(list) then
 				probe_list[src] = nil
+				if not next(probe_list) then
+					-- no more probe
+					rdebug.hookmask()
+				end
 				return
 			end
 		end
