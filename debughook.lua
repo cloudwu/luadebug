@@ -29,11 +29,16 @@ end
 
 local cr = { ["call"] = true, ["tail call"] = true, ["return"] = true }
 local source
+local linedefined
+local lastlinedefined
 local info = {}
 
 function hook.hook(event, currentline)
 	if cr[event] then
-		source = rdebug.getinfo(1,info).source
+		local s = rdebug.getinfo(1,info)
+		source = s.source
+		linedefined = s.linedefined
+		lastlinedefined = s.lastlinedefined
 	elseif event == "line" then
 		source = source or rdebug.getinfo(info).source
 	else
@@ -43,8 +48,13 @@ function hook.hook(event, currentline)
 	if not list then
 		rdebug.hookmask "cr"
 		return false
-	else
-		rdebug.hookmask "l"
+	elseif cr[event] then
+		for line in pairs(list) do
+			if line >= linedefined and line <= lastlinedefined then
+				rdebug.hookmask "crl"
+				break
+			end
+		end
 	end
 	local f = list[currentline]
 	if f then
