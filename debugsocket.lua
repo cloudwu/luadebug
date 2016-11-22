@@ -16,6 +16,8 @@ local function writestring(s)
 	end
 end
 
+writestring "connected\n"
+
 local info = {}
 local _print = print
 local function print(...)
@@ -25,12 +27,12 @@ local function print(...)
 	writestring(table.concat({string.format("%s(%d):",source,line),...},"\t"))
 end
 
-hook.probe("@test2.lua",6, function()
+hook.probe("@test2.lua",8, function()
 	local f = aux.frame(1)
 	print(f.a, f.b)
 end)
 
-hook.probe("@test2.lua",13, function()
+hook.probe("@test2.lua",15, function()
 	local f = aux.frame(1)
 	print(f.s)
 end)
