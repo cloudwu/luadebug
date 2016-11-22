@@ -11,6 +11,7 @@ end
 
 hook.probe("@test.lua",6, hookpoint)
 
+local tmp={}
 rdebug.sethook(function(event, line)
 	if hook.hook(event,line) then
 		return

@@ -5,7 +5,8 @@ if not pcall(rdebug.start, "debugsocket") then
 end
 
 local function foo(a,b)
-	local c = a + b	-- look debugsocket.lua
+ -- look debugsocket.lua
+	local c = a + b
 	return c
 end
 

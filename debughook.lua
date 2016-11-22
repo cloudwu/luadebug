@@ -50,8 +50,19 @@ function hook.hook(event, currentline)
 			rdebug.hookmask "cr"
 		end
 	elseif cr[event] then
-		for line in pairs(list) do
+		for line, func in pairs(list) do
 			if line >= linedefined and line <= lastlinedefined then
+				local activeline = rdebug.activeline(line)
+				if activeline == nil then
+					-- todo: print(line, "disable")
+					list[line] = nil
+					rdebug.hookmask "cr"
+					break
+				end
+				if activeline ~= line then
+					list[line] = nil
+					list[activeline] = func
+				end
 				rdebug.hookmask "crl"
 				break
 			end
