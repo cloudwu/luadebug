@@ -496,6 +496,12 @@ luaopen_remotedebug(lua_State *L) {
 		luaL_newlib(L,l);
 		lua_pushstring(L, "host");
 		lua_setfield(L, -2, "status");
+
+		// autoclose debugger VM, __gc in module table
+		lua_createtable(L,0,1);
+		lua_pushcfunction(L, lhost_clear);
+		lua_setfield(L, -2, "__gc");
+		lua_setmetatable(L, -2);
 	}
 	return 1;
 }
