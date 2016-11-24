@@ -13,7 +13,7 @@ linux: remotedebug.so
 mingw: remotedebug.dll
 
 remotedebug.so: remotedebug.c debugvar.h
-	gcc -Wall -g --shared -o $@ $< -I/usr/local/include -L/usr/local/bin -llua -fPIC
+	gcc -Wall -g --shared -o $@ $< -I/usr/local/include -fPIC
 
 remotedebug.dll : remotedebug.c debugvar.h
 	gcc -Wall -g --shared -o $@ $< -I/usr/local/include -L/usr/local/bin -llua53
