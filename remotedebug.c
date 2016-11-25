@@ -247,13 +247,15 @@ lclient_hookmask(lua_State *L) {
 	int t = lua_type(L,1);
 	int mask_index = 1;
 	if (t == LUA_TUSERDATA) {
+		lua_pushvalue(L, 1);
 		int ct = eval_value(L, hL);
+		lua_pop(L, 1);
 		if (ct == LUA_TNONE) {
 			return luaL_error(L, "Invalid thread");
 		}
 		if (ct != LUA_TTHREAD) {
 			lua_pop(hL, 1);
-			return luaL_error(L, "Need coroutine %s", lua_typename(hL, ct));
+			return luaL_error(L, "Need coroutine, Is %s", lua_typename(hL, ct));
 		}
 		lua_State *co = lua_tothread(hL, -1);
 		lua_pop(hL, 1);
