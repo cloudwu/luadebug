@@ -243,11 +243,28 @@ lclient_sethook(lua_State *L) {
 
 static int
 lclient_hookmask(lua_State *L) {
-	if (lua_type(L,1) != LUA_TSTRING) {
-		lua_sethook(L, NULL, 0 , 0);
+	lua_State *hL = get_host(L);
+	int t = lua_type(L,1);
+	int mask_index = 1;
+	if (t == LUA_TUSERDATA) {
+		int ct = eval_value(L, hL);
+		if (ct == LUA_TNONE) {
+			return luaL_error(L, "Invalid thread");
+		}
+		if (ct != LUA_TTHREAD) {
+			lua_pop(hL, 1);
+			return luaL_error(L, "Need coroutine %s", lua_typename(hL, ct));
+		}
+		hL = lua_tothread(hL, -1);
+		lua_pop(hL, 1);
+		mask_index = 2;
+	} 
+	
+	if (lua_type(L, mask_index) != LUA_TSTRING) {
+		lua_sethook(hL, NULL, 0 , 0);
 		return 0;
 	}
-	const char * mask = lua_tostring(L, 1);
+	const char * mask = lua_tostring(L, mask_index);
 	int m = 0, count = 0;
 	int i;
 	for (i=0;mask[i];i++) {
@@ -263,11 +280,10 @@ lclient_hookmask(lua_State *L) {
 			break;
 		}
 	}
-	if (lua_isinteger(L, 2)) {
+	if (lua_isinteger(L, mask_index+1)) {
 		m |= LUA_MASKCOUNT;
-		count = lua_tointeger(L, 2);
+		count = lua_tointeger(L, mask_index+1);
 	}
-	lua_State *hL = get_host(L);
 	lua_sethook(hL, host_hook, m, count);
 	return 0;
 }
