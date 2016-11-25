@@ -255,8 +255,9 @@ lclient_hookmask(lua_State *L) {
 			lua_pop(hL, 1);
 			return luaL_error(L, "Need coroutine %s", lua_typename(hL, ct));
 		}
-		hL = lua_tothread(hL, -1);
+		lua_State *co = lua_tothread(hL, -1);
 		lua_pop(hL, 1);
+		hL = co;
 		mask_index = 2;
 	} 
 	
