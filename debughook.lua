@@ -40,7 +40,7 @@ function hook.hook(event, currentline)
 		linedefined = s.linedefined
 		lastlinedefined = s.lastlinedefined
 	elseif event == "line" then
-		source = source or rdebug.getinfo(info).source
+		source = source or rdebug.getinfo(1, info).source
 	else
 		return	-- not hook event
 	end
