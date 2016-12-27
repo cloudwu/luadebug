@@ -28,55 +28,57 @@ function hook.probe(src, line, func)
 end
 
 local cr = { ["call"] = true, ["tail call"] = true, ["return"] = true }
-local source
-local linedefined
-local lastlinedefined
 local info = {}
+local trigger_line
 
 function hook.hook(event, currentline)
 	if cr[event] then
-		local s = rdebug.getinfo(1,info)
-		source = s.source
-		linedefined = s.linedefined
-		lastlinedefined = s.lastlinedefined
-	elseif event == "line" then
-		source = source or rdebug.getinfo(1, info).source
-	else
-		return	-- not hook event
+		trigger_line = nil
+		rdebug.hookmask "crl"
+		return false
 	end
-	local list = probe_list[source]
-	if not list then
-		if event == "line" then
+	if trigger_line == nil then
+		trigger_line = true
+		-- first line after call/return
+		local s = rdebug.getinfo(1,info)
+		local source = s.source
+		local linedefined = s.linedefined
+		local lastlinedefined = s.lastlinedefined
+		local list = probe_list[source]
+		if not list then
+			-- turn off line hook
 			rdebug.hookmask "cr"
-		end
-	elseif cr[event] then
-		local capture = false
-		for line, func in pairs(list) do
-			if line >= linedefined and line <= lastlinedefined then
-				local activeline = rdebug.activeline(line)
-				if activeline == nil then
-					-- todo: print(line, "disable")
-					list[line] = nil
-				else
-					if activeline ~= line then
+			return false
+		else
+			local capture = false
+			for line, func in pairs(list) do
+				if line >= linedefined and line <= lastlinedefined then
+					local activeline = rdebug.activeline(line)
+					if activeline == nil then
+						-- todo: print(line, "disable")
 						list[line] = nil
-						list[activeline] = func
+					else
+						if activeline ~= line then
+							list[line] = nil
+							list[activeline] = func
+						end
+						capture = true
 					end
-					capture = true
-					rdebug.hookmask "crl"
 				end
 			end
+			if not capture then
+				-- turn off line hook
+				rdebug.hookmask "cr"
+				return false
+			end
 		end
-		if not capture then
-			rdebug.hookmask "cr"
-		end
-	else
-		-- only line event can trigger probe
-		local f = list[currentline]
-		if f then
-			f(source, currentline)
-			return true
-		end
+	end
+
+	-- trigger probe
+	local f = list[currentline]
+	if f then
+		f(source, currentline)
+		return true
 	end
 	return false
 end
