@@ -50,22 +50,25 @@ function hook.hook(event, currentline)
 			rdebug.hookmask "cr"
 		end
 	elseif cr[event] then
+		local capture = false
 		for line, func in pairs(list) do
 			if line >= linedefined and line <= lastlinedefined then
 				local activeline = rdebug.activeline(line)
 				if activeline == nil then
 					-- todo: print(line, "disable")
 					list[line] = nil
-					rdebug.hookmask "cr"
-					break
+				else
+					if activeline ~= line then
+						list[line] = nil
+						list[activeline] = func
+					end
+					capture = true
+					rdebug.hookmask "crl"
 				end
-				if activeline ~= line then
-					list[line] = nil
-					list[activeline] = func
-				end
-				rdebug.hookmask "crl"
-				break
 			end
+		end
+		if not capture then
+			rdebug.hookmask "cr"
 		end
 	else
 		-- only line event can trigger probe
