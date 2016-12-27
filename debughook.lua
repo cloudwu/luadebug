@@ -29,38 +29,37 @@ end
 
 local cr = { ["call"] = true, ["tail call"] = true, ["return"] = true }
 local info = {}
-local trigger_line
+local bp_list
 
 function hook.hook(event, currentline)
 	if cr[event] then
-		trigger_line = nil
+		bp_list = nil
 		rdebug.hookmask "crl"
 		return false
 	end
-	if trigger_line == nil then
-		trigger_line = true
+	if bp_list == nil then
 		-- first line after call/return
 		local s = rdebug.getinfo(1,info)
 		local source = s.source
 		local linedefined = s.linedefined
 		local lastlinedefined = s.lastlinedefined
-		local list = probe_list[source]
-		if not list then
+		bp_list = probe_list[source]
+		if not bp_list then
 			-- turn off line hook
 			rdebug.hookmask "cr"
 			return false
 		else
 			local capture = false
-			for line, func in pairs(list) do
+			for line, func in pairs(bp_list) do
 				if line >= linedefined and line <= lastlinedefined then
 					local activeline = rdebug.activeline(line)
 					if activeline == nil then
 						-- todo: print(line, "disable")
-						list[line] = nil
+						bp_list[line] = nil
 					else
 						if activeline ~= line then
-							list[line] = nil
-							list[activeline] = func
+							bp_list[line] = nil
+							bp_list[activeline] = func
 						end
 						capture = true
 					end
@@ -75,7 +74,7 @@ function hook.hook(event, currentline)
 	end
 
 	-- trigger probe
-	local f = list[currentline]
+	local f = bp_list[currentline]
 	if f then
 		f(source, currentline)
 		return true
