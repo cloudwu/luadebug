@@ -447,7 +447,7 @@ lclient_activeline(lua_State *L) {
 	lua_Debug ar;
 	if (lua_getstack(hL, 1, &ar) == 0)
 		return 0;
-	if (lua_getinfo(hL, "lL", &ar) == 0)
+	if (lua_getinfo(hL, "SL", &ar) == 0)
 		return 0;
 
 	if (line < ar.linedefined)
@@ -458,7 +458,7 @@ lclient_activeline(lua_State *L) {
 	}
 
 	int i;
-	for (i=ar.linedefined;i<=ar.lastlinedefined;i++) {
+	for (i=line;i<=ar.lastlinedefined;i++) {
 		lua_rawgeti(hL, -1, i);
 		int b = lua_toboolean(hL, -1);
 		if (b) {
