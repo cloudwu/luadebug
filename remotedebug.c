@@ -181,47 +181,52 @@ get_host(lua_State *L) {
 	return hL;
 }
 
+static int hook_loop_k(lua_State *L, int status, lua_KContext ctx);
+
+static int
+hook_again_k(lua_State *L, int status, lua_KContext ctx) {
+	return lua_yieldk(L, 0, 0, hook_loop_k);	// resume hook_loop_k again
+}
+
 static int
 hook_loop_k(lua_State *L, int status, lua_KContext ctx) {
-	for (;;) {
-		int currentline = lua_tointeger(L,2);
-		lua_rawsetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);	// set host L
-		lua_settop(L, 1);
-		switch (lua_type(L, 1)) {
-		case LUA_TNUMBER:
-			switch(lua_tointeger(L, 1)) {
-				case LUA_HOOKCALL:
-					lua_pushstring(L, "call");
-					break;
-				case LUA_HOOKRET:
-					lua_pushstring(L, "return");
-					break;
-				case LUA_HOOKLINE:
-					lua_pushstring(L, "line");
-					break;
-				case LUA_HOOKCOUNT:
-					lua_pushstring(L, "count");
-					break;
-				case LUA_HOOKTAILCALL:
-					lua_pushstring(L, "tail call");
-					break;
-				default:
-					return luaL_error(L, "Unkown hook event %d", (int)lua_tointeger(L, 1));
-			}
-			break;
-		case LUA_TLIGHTUSERDATA:	// string
-			lua_pushstring(L, (const char *)lua_touserdata(L, 1));
-			break;
-		default:
-			lua_pushnil(L);
-			break;
+	int currentline = lua_tointeger(L,2);
+	lua_rawsetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);	// set host L
+	lua_settop(L, 1);
+	switch (lua_type(L, 1)) {
+	case LUA_TNUMBER:
+		switch(lua_tointeger(L, 1)) {
+			case LUA_HOOKCALL:
+				lua_pushstring(L, "call");
+				break;
+			case LUA_HOOKRET:
+				lua_pushstring(L, "return");
+				break;
+			case LUA_HOOKLINE:
+				lua_pushstring(L, "line");
+				break;
+			case LUA_HOOKCOUNT:
+				lua_pushstring(L, "count");
+				break;
+			case LUA_HOOKTAILCALL:
+				lua_pushstring(L, "tail call");
+				break;
+			default:
+				return luaL_error(L, "Unkown hook event %d", (int)lua_tointeger(L, 1));
 		}
-		lua_pushvalue(L, lua_upvalueindex(1));
-		lua_replace(L, 1);
-		lua_pushinteger(L, currentline);
-		lua_callk(L, 2, 0, 0, hook_loop_k);
-		return lua_yieldk(L, 0, ctx, hook_loop_k);
+		break;
+	case LUA_TLIGHTUSERDATA:	// string
+		lua_pushstring(L, (const char *)lua_touserdata(L, 1));
+		break;
+	default:
+		lua_pushnil(L);
+		break;
 	}
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_replace(L, 1);
+	lua_pushinteger(L, currentline);
+	lua_callk(L, 2, 0, 0, hook_again_k);
+	return hook_again_k(L, 0, 0);
 }
 
 static int
