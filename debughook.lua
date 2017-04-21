@@ -37,10 +37,11 @@ function hook.hook(event, currentline)
 		rdebug.hookmask "crl"
 		return false
 	end
+	local source
 	if bp_list == nil then
 		-- first line after call/return
 		local s = rdebug.getinfo(1,info)
-		local source = s.source
+		source = s.source
 		local linedefined = s.linedefined
 		local lastlinedefined = s.lastlinedefined
 		bp_list = probe_list[source]
