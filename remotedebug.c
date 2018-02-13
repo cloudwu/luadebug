@@ -2,6 +2,7 @@
 #include <lualib.h>
 #include <lauxlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "debugvar.h"
 
@@ -34,11 +35,38 @@ lhost_clear(lua_State *L) {
 	return 0;
 }
 
+static void
+copy_string(lua_State *L, lua_State *cL, const char * key) {
+	if (lua_getfield(L, -1, key) != LUA_TSTRING)
+		luaL_error(L, "Invalid string : package.%s", key);
+	const char * s = lua_tostring(L, -1);
+	lua_pushstring(cL, s);
+	lua_setfield(cL, -2, key);
+	lua_pop(L, 1);
+}
+
+static void
+copy_package_path(lua_State *hL, lua_State *L) {
+	if (lua_getglobal(hL, "package") != LUA_TTABLE)
+		luaL_error(L, "No package");
+	if (lua_getglobal(L, "package") != LUA_TTABLE)
+		luaL_error(L, "No package in debugger VM");
+
+	copy_string(hL, L, "path");
+	copy_string(hL, L, "cpath");
+
+	lua_pop(L, 1);
+	lua_pop(hL, 1);
+}
+
 // 1. lightuserdata string_mainscript
 // 2. lightuserdata host_L
 static int
 client_main(lua_State *L) {
+	lua_State *hL = lua_touserdata(L, 2);
 	luaL_openlibs(L);
+	copy_package_path(hL, L);
+
 	lua_pushvalue(L, 2);
 	lua_rawsetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);	// set host L
 
@@ -108,14 +136,22 @@ lhost_probe(lua_State *L) {
 		return 0;
 	}
 	lua_State *cL = lua_touserdata(L, -1);
-	if (lua_type(L, 1) == LUA_TSTRING) {
-		const char * p = lua_tostring(L, 1);
+	lua_State *debugL = L;
+	int index = 1;
+	int t = lua_type(L, index);
+	if (t == LUA_TTHREAD) {
+		debugL = lua_tothread(L, index);
+		index ++;
+		t = lua_type(L, index);
+	}
+	if (t == LUA_TSTRING) {
+		const char * p = lua_tostring(L, index);
 		lua_pushlightuserdata(cL, (void *)p);
 	} else {
 		lua_pushnil(cL);
 	}
 	lua_pushinteger(cL, ar.currentline);
-	lua_pushlightuserdata(cL, L);
+	lua_pushlightuserdata(cL, debugL);
 	if (lua_resume(cL, NULL, 3) == LUA_YIELD) {
 		return 0;
 	}
@@ -480,7 +516,6 @@ lclient_activeline(lua_State *L) {
 LUAMOD_API int
 luaopen_remotedebug(lua_State *L) {
 	luaL_checkversion(L);
-
 	if (lua_rawgetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST) != LUA_TNIL) {
 		// It's client
 		luaL_Reg l[] = {
