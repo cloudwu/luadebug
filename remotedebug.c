@@ -1,3 +1,4 @@
+#define LUA_LIB
 #include <lua.h>
 #include <lualib.h>
 #include <lauxlib.h>
@@ -308,6 +309,13 @@ lclient_switch(lua_State *L) {
 }
 
 static int
+lclient_context(lua_State *L) {
+	lua_rawgetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);
+	lua_pushfstring(L, "[thread: %p]", lua_topointer(L, -1));
+	return 1;
+}
+
+static int
 lclient_sethook(lua_State *L) {
 	luaL_checktype(L,1,LUA_TFUNCTION);
 	lua_State *cL = lua_newthread(L);
@@ -492,13 +500,13 @@ lclient_getinfo(lua_State *L) {
 	lua_settop(L, 2);
 	if (lua_type(L, 2) != LUA_TTABLE) {
 		lua_pop(L, 1);
-		lua_createtable(L, 0, 5);
+		lua_createtable(L, 0, 7);
 	}
 	lua_State *hL = get_host(L);
 	lua_Debug ar;
 	if (lua_getstack(hL, level, &ar) == 0)
 		return 0;
-	if (lua_getinfo(hL, "Sl", &ar) == 0)
+	if (lua_getinfo(hL, "Sln", &ar) == 0)
 		return 0;
 	lua_pushstring(L, ar.source);
 	lua_setfield(L, 2, "source");
@@ -510,6 +518,10 @@ lclient_getinfo(lua_State *L) {
 	lua_setfield(L, 2, "linedefined");
 	lua_pushinteger(L, ar.lastlinedefined);
 	lua_setfield(L, 2, "lastlinedefined");
+	lua_pushstring(L, ar.name? ar.name : "?");
+	lua_setfield(L, 2, "name");
+	lua_pushstring(L, ar.what? ar.what : "?");
+	lua_setfield(L, 2, "what");
 
 	return 1;
 }
@@ -549,13 +561,6 @@ lclient_activeline(lua_State *L) {
 	return 0;
 }
 
-static int
-lclient_context(lua_State *L) {
-	lua_rawgetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);
-	lua_pushfstring(L, "[thread: %p]", lua_topointer(L, -1));
-	return 1;
-}
-
 LUAMOD_API int
 luaopen_remotedebug(lua_State *L) {
 	luaL_checkversion(L);
@@ -563,6 +568,7 @@ luaopen_remotedebug(lua_State *L) {
 		// It's client
 		luaL_Reg l[] = {
 			{ "switch", lclient_switch },
+			{ "context", lclient_context },
 			{ "sethook", lclient_sethook },
 			{ "hookmask", lclient_hookmask },
 			{ "getlocal", lclient_getlocal },
@@ -577,7 +583,6 @@ luaopen_remotedebug(lua_State *L) {
 			{ "type", lclient_type },
 			{ "getinfo", lclient_getinfo },
 			{ "activeline", lclient_activeline },
-			{ "context", lclient_context },
 			{ NULL, NULL },
 		};
 		luaL_newlib(L,l);
