@@ -549,6 +549,13 @@ lclient_activeline(lua_State *L) {
 	return 0;
 }
 
+static int
+lclient_context(lua_State *L) {
+	lua_rawgetp(L, LUA_REGISTRYINDEX, &DEBUG_HOST);
+	lua_pushfstring(L, "[thread: %p]", lua_topointer(L, -1));
+	return 1;
+}
+
 LUAMOD_API int
 luaopen_remotedebug(lua_State *L) {
 	luaL_checkversion(L);
@@ -570,6 +577,7 @@ luaopen_remotedebug(lua_State *L) {
 			{ "type", lclient_type },
 			{ "getinfo", lclient_getinfo },
 			{ "activeline", lclient_activeline },
+			{ "context", lclient_context },
 			{ NULL, NULL },
 		};
 		luaL_newlib(L,l);
